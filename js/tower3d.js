@@ -255,7 +255,7 @@ export function createTower(container, onPick) {
         const grow = out.clone().multiplyScalar(Math.sin(0.45)).add(new THREE.Vector3(0, Math.cos(0.45), 0)).normalize();
         p.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), grow));
         p.position.copy(mouth).addScaledVector(grow, 0.03);
-        p.scale.multiplyScalar(6.0);
+        p.scale.multiplyScalar(4.5);
         plantsGroup.add(p);
       });
     }
@@ -269,7 +269,7 @@ export function createTower(container, onPick) {
       // aim directional models outward from the crown's center
       if (p.userData.directional) p.rotation.y += Math.PI / 2 - (s < 4 ? (s / 4) * Math.PI * 2 + 0.5 : 0);
       p.position.copy(crownSpotPos(s));
-      p.scale.multiplyScalar(9.2);
+      p.scale.multiplyScalar(6.9);
       plantsGroup.add(p);
     });
 
