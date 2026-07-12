@@ -15,11 +15,11 @@ const C = {
 
 // tower proportions (matches the physical model: crown + 5 scalloped rings,
 // see img.webp in the repo root)
-const RING_COUNT = 5, POCKETS_PER_RING = 9, CROWN_SLOTS = 5;
+const RING_COUNT = 5, POCKETS_PER_RING = 9;
 const RING_H = 0.62, R0 = 1.10, DR = 0;             // straight core column — the real tower doesn't taper
-const CROWN_H = 0.30, BASE_H = 0.45;
+const CAP_H = 0.22, BASE_H = 0.45;
 const RINGS_TOP = BASE_H + RING_COUNT * RING_H;     // y of ring 1's top edge
-const CROWN_Y = RINGS_TOP + CROWN_H;                // y of crown rim / soil surface
+const CAP_Y = RINGS_TOP + CAP_H;                    // y of the top rim / soil surface
 // the big flared pocket cups that give the tower its scalloped profile
 const CUP_R = 0.34, CUP_TIP = 0.07, CUP_H = 0.84, CUP_TILT = 0.62;
 
@@ -68,12 +68,6 @@ function pocketFrame(i, slot) {
   const mouth = out.clone().multiplyScalar(ringTopR(i) + 0.18);
   mouth.y = ringTopY(i) - 0.15;
   return { mouth, out, up, a };
-}
-
-function crownSpotPos(slot) {
-  if (slot === 4) return new THREE.Vector3(0, CROWN_Y, 0.04); // near center, in front of the worm column
-  const a = (slot / 4) * Math.PI * 2 + 0.5;
-  return new THREE.Vector3(Math.cos(a) * 0.66, CROWN_Y, Math.sin(a) * 0.66);
 }
 
 export function createTower(container, onPick) {
@@ -181,36 +175,20 @@ export function createTower(container, onPick) {
     }
   }
 
-  /* crown: rim + soil + 5 spots + worm column stub */
-  const rim = new THREE.Mesh(new THREE.CylinderGeometry(R0, R0 + 0.01, CROWN_H, 36), mat(C.terra));
-  rim.position.y = RINGS_TOP + CROWN_H / 2;
-  rim.userData = { zone: 'crown' };
+  /* top cap: rim, soil surface, and the worm-column lid — the real
+     tower's top opening is compost-tube access, not a planting spot */
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(R0, R0 + 0.01, CAP_H, 36), mat(C.terra));
+  rim.position.y = RINGS_TOP + CAP_H / 2;
   scene.add(rim);
-  pickables.push(rim);
-  ringBands.crown = rim;
 
-  const crownSoil = new THREE.Mesh(new THREE.CircleGeometry(R0 - 0.05, 36), mat(C.soil));
-  crownSoil.rotation.x = -Math.PI / 2;
-  crownSoil.position.y = CROWN_Y - 0.02;
-  crownSoil.userData = { zone: 'crown' };
-  scene.add(crownSoil);
-  pickables.push(crownSoil);
+  const topSoil = new THREE.Mesh(new THREE.CircleGeometry(R0 - 0.06, 36), mat(C.soil));
+  topSoil.rotation.x = -Math.PI / 2;
+  topSoil.position.y = CAP_Y - 0.05;
+  scene.add(topSoil);
 
-  const column = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.12, 16), mat(C.drawer));
-  column.position.set(-0.56, CROWN_Y + 0.04, -0.56);
-  scene.add(column);
-
-  const crownSpots = [];
-  for (let s = 0; s < CROWN_SLOTS; s++) {
-    const spot = new THREE.Mesh(new THREE.CircleGeometry(0.16, 12), mat(C.soilLite));
-    spot.rotation.x = -Math.PI / 2;
-    spot.position.copy(crownSpotPos(s));
-    spot.position.y = CROWN_Y - 0.012;
-    spot.userData = { zone: 'crown', slot: s };
-    scene.add(spot);
-    pickables.push(spot);
-    crownSpots.push(spot);
-  }
+  const columnLid = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.10, 20), mat(C.drawer));
+  columnLid.position.y = CAP_Y - 0.02;
+  scene.add(columnLid);
 
   /* dynamic layers: plants + selection/search highlight rings */
   const plantsGroup = new THREE.Group();
@@ -224,10 +202,9 @@ export function createTower(container, onPick) {
   }
 
   function haloAt(zone, color, opacity) {
-    const isCrown = zone === 'crown';
-    const i = isCrown ? -1 : +zone.slice(1) - 1;
-    const r = isCrown ? R0 + 0.10 : (ringTopR(i) + ringBotR(i)) / 2 + CUP_R + 0.16; // clear the cup scallops
-    const y = isCrown ? RINGS_TOP + CROWN_H / 2 : ringTopY(i) - RING_H / 2;
+    const i = +zone.slice(1) - 1;
+    const r = (ringTopR(i) + ringBotR(i)) / 2 + CUP_R + 0.16; // clear the cup scallops
+    const y = ringTopY(i) - RING_H / 2;
     const halo = new THREE.Mesh(new THREE.TorusGeometry(r, 0.022, 8, 48),
       new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity }));
     halo.rotation.x = Math.PI / 2;
@@ -259,20 +236,6 @@ export function createTower(container, onPick) {
         plantsGroup.add(p);
       });
     }
-    // crown plants (bigger, straight up)
-    state.pockets.crown.forEach((pid, s) => {
-      crownSpots[s].visible = !pid;
-      if (!pid) return;
-      const plant = plantById(pid);
-      if (!plant) return;
-      const p = buildPlant(plant, 'crown' + s + pid);
-      // aim directional models outward from the crown's center
-      if (p.userData.directional) p.rotation.y += Math.PI / 2 - (s < 4 ? (s / 4) * Math.PI * 2 + 0.5 : 0);
-      p.position.copy(crownSpotPos(s));
-      p.scale.multiplyScalar(6.9);
-      plantsGroup.add(p);
-    });
-
     // selection halo (ink) + search halos (leaf: solid = best, faded = good)
     if (selZone) hlGroup.add(haloAt(selZone, C.ink, 1));
     if (hlPlant) {
