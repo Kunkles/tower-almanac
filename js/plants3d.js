@@ -186,7 +186,7 @@ function vinePlant(rand, o) {
   const { len = 0.5, color, leafMaker, nLeaves = 7, uprightLeaves = false, fruitMaker, nFruit = 0, fruitDy = -0.03, tendril = false } = o;
   const g = new THREE.Group();
   const curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 0.03, 0), new THREE.Vector3(0.03, 0.10, 0.10),
+    new THREE.Vector3(0, -0.02, 0), new THREE.Vector3(0.03, 0.10, 0.10),
     new THREE.Vector3(-0.03, 0.01, 0.22), new THREE.Vector3(0.04, -len * 0.45, 0.33),
     new THREE.Vector3(-0.02, -len, 0.40),
   ]);
@@ -357,19 +357,19 @@ const SPECIES = {
   tom_bush: (p, r) => {
     const g = bush(r, { stems: 5, h: 0.11, tilt: 0.4, r: 0.005, color: p.foliage, pairs: 3,
       leaf: { L: 0.05, W: 0.022, bend: 0.4, waves: 4, depth: 0.22, fullness: 0.6 } });
-    dangles(r, g, 4, () => berry(0.016, p.accent), { rad: 0.05, y0: 0.03, y1: 0.08 });
+    dangles(r, g, 4, () => berry(0.016, p.accent), { rad: 0.035, y0: 0.03, y1: 0.07 });
     return g;
   },
   pepper: (p, r) => {
     const g = bush(r, { stems: 3, h: 0.12, tilt: 0.25, r: 0.005, color: p.foliage, pairs: 3,
       leaf: { L: 0.05, W: 0.025, bend: 0.35, fullness: 0.7 } });
-    dangles(r, g, 3, i => pod(0.011, 0.02, i % 3 ? p.accent : '#5E8A3C'), { rad: 0.04, y0: 0.03, y1: 0.06 });
+    dangles(r, g, 3, i => pod(0.011, 0.02, i % 3 ? p.accent : '#5E8A3C'), { rad: 0.028, y0: 0.03, y1: 0.06 });
     return g;
   },
   beans: (p, r) => {
     const g = bush(r, { stems: 5, h: 0.10, tilt: 0.4, color: p.foliage, pairs: 2,
       leaf: { L: 0.05, W: 0.035, bend: 0.45, fullness: 0.7 } });
-    dangles(r, g, 5, () => pod(0.004, 0.04, p.accent), { rad: 0.04, y0: 0.02, y1: 0.05 });
+    dangles(r, g, 5, () => pod(0.004, 0.04, p.accent), { rad: 0.028, y0: 0.02, y1: 0.05 });
     return g;
   },
   strawberry: (p, r) => {

@@ -250,13 +250,14 @@ export function createTower(container, onPick) {
         if (!pid) return;
         const plant = plantById(pid);
         if (!plant) return;
-        const { mouth, out } = pocketFrame(i, s);
+        const { mouth, out, up } = pocketFrame(i, s);
         const p = buildPlant(plant, zone + s + pid);
         if (p.userData.directional) p.rotation.y += Math.atan2(out.x, out.z);
         // plants lean out less steeply than the cup itself
         const grow = out.clone().multiplyScalar(Math.sin(0.45)).add(new THREE.Vector3(0, Math.cos(0.45), 0)).normalize();
         p.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), grow));
-        p.position.copy(mouth).addScaledVector(grow, 0.03);
+        // base sits below the cup's soil disc so stems emerge from the dirt
+        p.position.copy(mouth).addScaledVector(up, -0.10);
         p.scale.multiplyScalar(4.5);
         plantsGroup.add(p);
       });
@@ -271,6 +272,7 @@ export function createTower(container, onPick) {
       // aim directional models outward from the crown's center
       if (p.userData.directional) p.rotation.y += Math.PI / 2 - (s < 4 ? (s / 4) * Math.PI * 2 + 0.5 : 0);
       p.position.copy(crownSpotPos(s));
+      p.position.y = CROWN_Y - 0.02; // base under the dirt surface, not on the rim
       p.scale.multiplyScalar(6.9);
       plantsGroup.add(p);
     });
