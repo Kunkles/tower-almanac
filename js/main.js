@@ -11,7 +11,7 @@ const STORAGE_KEY = 'gt2-almanac';
 let state = { pockets: {} };
 ZONES.forEach(z => state.pockets[z.id] = Array(z.slots).fill(null));
 
-let selZone = 'r1';
+let selZone = 'crown';
 let pickingSlot = null;   // index of slot being planted
 let viewingSlot = null;   // index of filled slot being viewed
 let filter = 'best';      // best | season | all
@@ -138,7 +138,7 @@ function renderPanel(){
   } else {
     const recs = PLANTS.filter(p=>p.best.includes(z.id)).sort((a,b)=>inSeason(b)-inSeason(a));
     pickerHtml = `
-      <div class="sect">Best in this row</div>
+      <div class="sect">Best in this ${z.id==='crown'?'spot':'row'}</div>
       <div class="plist">${recs.map(p=>`
         <button class="prow" data-plant-info="${p.id}">
           <span class="pname">${p.name}</span>
@@ -155,7 +155,7 @@ function renderPanel(){
 
   el.innerHTML = `
     ${hlNote}
-    <div class="zone-head"><span class="zone-num">ROW ${z.id.slice(1)} / ${z.slots} pockets</span><h2>${z.name}</h2></div>
+    <div class="zone-head"><span class="zone-num">${z.id==='crown'?'TOP':'ROW '+z.id.slice(1)} / ${z.slots} pockets</span><h2>${z.name}</h2></div>
     <p class="zone-desc">${z.desc}</p>
     <div class="env">
       <span class="chip sun">☀ <b>${z.sun}</b></span>
