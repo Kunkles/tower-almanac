@@ -13,14 +13,17 @@ const C = {
   base: 0xA0522D, drawer: 0x3A2A1E, ground: 0xDDE4CE,
 };
 
-// tower proportions (matches the physical model: crown + 6 rings widening downward)
-const RING_H = 0.55, R0 = 0.60, DR = 0.065;
-const CROWN_H = 0.30, BASE_H = 0.42;
-const RINGS_TOP = BASE_H + 6 * RING_H;              // y of ring 1's top edge
+// tower proportions (matches the physical model: crown + 5 scalloped rings,
+// see img.webp in the repo root)
+const RING_COUNT = 5, POCKETS_PER_RING = 9, CROWN_SLOTS = 5;
+const RING_H = 0.62, R0 = 0.50, DR = 0.055;         // core column radii
+const CROWN_H = 0.30, BASE_H = 0.45;
+const RINGS_TOP = BASE_H + RING_COUNT * RING_H;     // y of ring 1's top edge
 const CROWN_Y = RINGS_TOP + CROWN_H;                // y of crown rim / soil surface
-const POCKETS_PER_RING = 9, CROWN_SLOTS = 5;
+// the big flared pocket cups that give the tower its scalloped profile
+const CUP_R = 0.17, CUP_TIP = 0.035, CUP_H = 0.42, CUP_TILT = 0.62;
 
-const ringTopR = i => R0 + i * DR;                  // i = 0 (top ring) … 5 (bottom)
+const ringTopR = i => R0 + i * DR;                  // i = 0 (top ring) … 4 (bottom)
 const ringBotR = i => R0 + (i + 1) * DR;
 const ringTopY = i => RINGS_TOP - i * RING_H;
 
@@ -55,17 +58,16 @@ function buildPlant(plant, seed) {
 
 /* ---------- static tower ---------- */
 
-// world-space position + grow direction (unit) of pocket `slot` on ring `i`
+// world-space frame of pocket `slot` on ring `i`: cup-mouth center, outward
+// direction, and the tilted cup axis
 function pocketFrame(i, slot) {
   const offset = (i % 2) * (Math.PI / POCKETS_PER_RING); // stagger alternate rings
   const a = (slot / POCKETS_PER_RING) * Math.PI * 2 + offset;
-  const y = ringTopY(i) - RING_H * 0.68;
-  const t = 0.68; // fraction down the ring face
-  const r = ringTopR(i) * (1 - t) + ringBotR(i) * t;
   const out = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
-  const pos = out.clone().multiplyScalar(r + 0.02);
-  pos.y = y;
-  return { pos, out, a };
+  const up = out.clone().multiplyScalar(Math.sin(CUP_TILT)).add(new THREE.Vector3(0, Math.cos(CUP_TILT), 0)).normalize();
+  const mouth = out.clone().multiplyScalar(ringTopR(i) + 0.09);
+  mouth.y = ringTopY(i) - 0.15;
+  return { mouth, out, up, a };
 }
 
 function crownSpotPos(slot) {
@@ -120,19 +122,30 @@ export function createTower(container, onPick) {
   scene.add(shadow);
 
   /* base + tea drawer */
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(ringBotR(5) + 0.02, ringBotR(5) + 0.14, BASE_H, 36), mat(C.base));
-  base.position.y = BASE_H / 2;
+  const botR = ringBotR(RING_COUNT - 1);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(botR + 0.02, botR + 0.10, BASE_H, 36), mat(C.base));
+  base.position.y = BASE_H / 2 + 0.05;
   scene.add(base);
+  for (let i = 0; i < 4; i++) { // stubby feet, like the photo
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 0.12), mat(C.terraDeep));
+    foot.position.set(Math.cos(a) * (botR - 0.05), 0.05, Math.sin(a) * (botR - 0.05));
+    scene.add(foot);
+  }
   const drawer = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.12), mat(C.drawer));
-  drawer.position.set(0, 0.16, ringBotR(5) + 0.10);
+  drawer.position.set(0, 0.22, botR + 0.06);
   scene.add(drawer);
   const handle = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.03), mat(0xC9B08A));
-  handle.position.set(0, 0.16, ringBotR(5) + 0.165);
+  handle.position.set(0, 0.22, botR + 0.125);
   scene.add(handle);
 
-  /* six tapered rings, each with 9 pocket cups */
+  /* five rings: a core band wearing 9 big flared pocket cups each —
+     the scalloped profile of the real product */
+  const cupGeo = new THREE.CylinderGeometry(CUP_R, CUP_TIP, CUP_H, 10, 1, true);
+  const cupMatEmpty = new THREE.MeshStandardMaterial({ color: C.terraLite, roughness: 0.8, side: THREE.DoubleSide });
+  const cupMatFilled = new THREE.MeshStandardMaterial({ color: C.terraDeep, roughness: 0.8, side: THREE.DoubleSide });
   const pocketCups = {}; // zone -> [cup meshes]
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < RING_COUNT; i++) {
     const zone = 'r' + (i + 1);
     const band = new THREE.Mesh(
       new THREE.CylinderGeometry(ringTopR(i), ringBotR(i), RING_H, 36),
@@ -143,27 +156,25 @@ export function createTower(container, onPick) {
     pickables.push(band);
     ringBands[zone] = band;
 
-    const lip = new THREE.Mesh(new THREE.TorusGeometry(ringTopR(i) + 0.005, 0.014, 6, 40), mat(C.terraDeep));
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(ringTopR(i) + 0.005, 0.016, 6, 40), mat(C.terraDeep));
     lip.rotation.x = Math.PI / 2;
     lip.position.y = ringTopY(i);
     scene.add(lip);
 
     pocketCups[zone] = [];
     for (let s = 0; s < POCKETS_PER_RING; s++) {
-      const { pos, out } = pocketFrame(i, s);
-      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.06, 0.17, 10, 1, true), mat(C.terraLite));
-      // tilt the cup mouth up and outward, like the real pockets
-      const up = out.clone().multiplyScalar(Math.sin(0.8)).add(new THREE.Vector3(0, Math.cos(0.8), 0)).normalize();
+      const { mouth, up } = pocketFrame(i, s);
+      const cup = new THREE.Mesh(cupGeo, cupMatEmpty);
       cup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
-      cup.position.copy(pos);
+      cup.position.copy(mouth).addScaledVector(up, -CUP_H / 2);
       cup.userData = { zone, slot: s };
       scene.add(cup);
       pickables.push(cup);
       pocketCups[zone].push(cup);
 
-      const soil = new THREE.Mesh(new THREE.CircleGeometry(0.098, 10), mat(C.soil));
+      const soil = new THREE.Mesh(new THREE.CircleGeometry(CUP_R * 0.86, 12), mat(C.soil));
       soil.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), up);
-      soil.position.copy(pos).add(up.clone().multiplyScalar(0.075));
+      soil.position.copy(mouth).addScaledVector(up, -0.03);
       soil.userData = { zone, slot: s };
       scene.add(soil);
       pickables.push(soil);
@@ -215,7 +226,7 @@ export function createTower(container, onPick) {
   function haloAt(zone, color, opacity) {
     const isCrown = zone === 'crown';
     const i = isCrown ? -1 : +zone.slice(1) - 1;
-    const r = (isCrown ? R0 : (ringTopR(i) + ringBotR(i)) / 2) + 0.10;
+    const r = isCrown ? R0 + 0.10 : (ringTopR(i) + ringBotR(i)) / 2 + CUP_R + 0.16; // clear the cup scallops
     const y = isCrown ? RINGS_TOP + CROWN_H / 2 : ringTopY(i) - RING_H / 2;
     const halo = new THREE.Mesh(new THREE.TorusGeometry(r, 0.022, 8, 48),
       new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity }));
@@ -230,19 +241,20 @@ export function createTower(container, onPick) {
     disposeGroup(hlGroup);
 
     // plants in ring pockets
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < RING_COUNT; i++) {
       const zone = 'r' + (i + 1);
       state.pockets[zone].forEach((pid, s) => {
-        pocketCups[zone][s].material = mat(pid ? C.terraDeep : C.terraLite);
+        pocketCups[zone][s].material = pid ? cupMatFilled : cupMatEmpty;
         if (!pid) return;
         const plant = plantById(pid);
         if (!plant) return;
-        const { pos, out } = pocketFrame(i, s);
+        const { mouth, out } = pocketFrame(i, s);
         const p = buildPlant(plant, zone + s + pid);
         if (p.userData.directional) p.rotation.y += Math.atan2(out.x, out.z);
-        const up = out.clone().multiplyScalar(Math.sin(0.45)).add(new THREE.Vector3(0, Math.cos(0.45), 0)).normalize();
-        p.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), up));
-        p.position.copy(pos).add(up.clone().multiplyScalar(0.08));
+        // plants lean out less steeply than the cup itself
+        const grow = out.clone().multiplyScalar(Math.sin(0.45)).add(new THREE.Vector3(0, Math.cos(0.45), 0)).normalize();
+        p.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), grow));
+        p.position.copy(mouth).addScaledVector(grow, 0.03);
         p.scale.multiplyScalar(6.0);
         plantsGroup.add(p);
       });
