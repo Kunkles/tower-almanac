@@ -16,7 +16,7 @@ const C = {
 // tower proportions (matches the physical model: crown + 5 scalloped rings,
 // see img.webp in the repo root)
 const RING_COUNT = 5, POCKETS_PER_RING = 9, CROWN_SLOTS = 5;
-const RING_H = 0.62, R0 = 0.50, DR = 0.055;         // core column radii
+const RING_H = 0.62, R0 = 0.55, DR = 0;             // straight core column — the real tower doesn't taper
 const CROWN_H = 0.30, BASE_H = 0.45;
 const RINGS_TOP = BASE_H + RING_COUNT * RING_H;     // y of ring 1's top edge
 const CROWN_Y = RINGS_TOP + CROWN_H;                // y of crown rim / soil surface
