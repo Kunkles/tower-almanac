@@ -181,7 +181,8 @@ export function createTower(container, onPick) {
     }
   }
 
-  /* crown: rim + soil + 5 spots + worm column stub */
+  /* crown: a thin terracotta rim full of dirt — the whole open top reads
+     as one soil surface, with 5 planting spots and the worm column lid */
   const rim = new THREE.Mesh(new THREE.CylinderGeometry(R0, R0 + 0.01, CROWN_H, 36), mat(C.terra));
   rim.position.y = RINGS_TOP + CROWN_H / 2;
   rim.userData = { zone: 'crown' };
@@ -189,15 +190,16 @@ export function createTower(container, onPick) {
   pickables.push(rim);
   ringBands.crown = rim;
 
-  const crownSoil = new THREE.Mesh(new THREE.CircleGeometry(R0 - 0.05, 36), mat(C.soil));
+  // dirt sits above the rim cap so only a sliver of terracotta edge shows
+  const crownSoil = new THREE.Mesh(new THREE.CircleGeometry(R0 - 0.03, 36), mat(C.soil));
   crownSoil.rotation.x = -Math.PI / 2;
-  crownSoil.position.y = CROWN_Y - 0.02;
+  crownSoil.position.y = CROWN_Y + 0.01;
   crownSoil.userData = { zone: 'crown' };
   scene.add(crownSoil);
   pickables.push(crownSoil);
 
   const column = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.12, 16), mat(C.drawer));
-  column.position.set(-0.56, CROWN_Y + 0.04, -0.56);
+  column.position.set(-0.56, CROWN_Y + 0.05, -0.56);
   scene.add(column);
 
   const crownSpots = [];
@@ -205,7 +207,7 @@ export function createTower(container, onPick) {
     const spot = new THREE.Mesh(new THREE.CircleGeometry(0.16, 12), mat(C.soilLite));
     spot.rotation.x = -Math.PI / 2;
     spot.position.copy(crownSpotPos(s));
-    spot.position.y = CROWN_Y - 0.012;
+    spot.position.y = CROWN_Y + 0.018;
     spot.userData = { zone: 'crown', slot: s };
     scene.add(spot);
     pickables.push(spot);
