@@ -1,0 +1,9 @@
+{
+  "name": "The Tower Almanac",
+  "short_name": "Tower Almanac",
+  "description": "Planting guide and pocket tracker for a Garden Tower 2 vertical garden",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#EDF1E4",
+  "theme_color": "#EDF1E4"
+}

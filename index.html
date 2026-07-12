@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#EDF1E4">
+<link rel="manifest" href="manifest.json">
+<title>Tower Almanac — Garden Tower 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDF1E4;          /* greenhouse glass */
+    --ink:#25341F;         /* pine ink */
+    --ink-soft:#5A6B50;
+    --terra:#C05F38;       /* the tower itself */
+    --terra-deep:#96431F;
+    --terra-lite:#D98B62;
+    --soil:#4A3628;
+    --leaf:#4E7A3C;
+    --leaf-lite:#7FA867;
+    --sun:#DFA22F;
+    --water:#5B8FA3;
+    --card:#F6F8EF;
+    --line:#C9D2B8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:'Karla',system-ui,sans-serif;font-size:15px;line-height:1.5}
+  .mono{font-family:'IBM Plex Mono',monospace}
+
+  .wrap{max-width:1060px;margin:0 auto;padding:28px 20px 60px}
+
+  header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);display:flex;gap:14px;flex-wrap:wrap}
+  .eyebrow span::after{content:"·";margin-left:14px;color:var(--line)}
+  .eyebrow span:last-child::after{content:""}
+  h1{font-family:'Fraunces',serif;font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1.05;margin-top:8px}
+  h1 em{font-style:italic;font-weight:400;color:var(--terra)}
+  .sub{margin-top:8px;color:var(--ink-soft);max-width:560px}
+
+  .grid{display:grid;grid-template-columns:400px 1fr;gap:32px;align-items:start}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+
+  /* ---- 3D tower stage ---- */
+  .tower-card{position:sticky;top:16px}
+  @media(max-width:860px){.tower-card{position:static}}
+  .tower-stage{position:relative;height:clamp(420px,58vh,560px);border-radius:14px;overflow:hidden;touch-action:none}
+  .tower-stage canvas{display:block;width:100%;height:100%;cursor:grab}
+  .tower-stage canvas:active{cursor:grabbing}
+  /* structure-as-information: the vertical sun/moisture gradients flank the 3D view */
+  .gbar{position:absolute;top:56px;bottom:72px;width:8px;border-radius:4px;pointer-events:none}
+  .gbar.gsun{left:10px;background:linear-gradient(#DFA22F,#EDE6CF)}
+  .gbar.gwet{right:10px;background:linear-gradient(#DCE7DE,#5B8FA3)}
+  .gbar span{position:absolute;top:-22px;left:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft)}
+  .gbar.gwet span{left:auto;right:0}
+  .drag-hint{font-size:10.5px;color:var(--ink-soft);text-align:center;margin-top:8px}
+
+  .zone-btns{display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .zbtn{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 11px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--ink-soft);cursor:pointer}
+  .zbtn:hover{border-color:var(--terra)}
+  .zbtn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .zbtn .occ{color:var(--leaf-lite)}
+  .zbtn.on .occ{color:var(--leaf-lite)}
+
+  /* ---- panel ---- */
+  .panel{min-width:0}
+  .zone-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .zone-head h2{font-family:'Fraunces',serif;font-weight:600;font-size:26px}
+  .zone-num{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--terra-deep);border:1px solid var(--terra);border-radius:99px;padding:2px 10px}
+  .zone-desc{margin-top:6px;color:var(--ink-soft)}
+
+  .env{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .chip{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 10px;border-radius:99px;background:var(--card);border:1px solid var(--line)}
+  .chip b{font-weight:500}
+  .chip.sun b{color:var(--sun)} .chip.water b{color:var(--water)} .chip.nutri b{color:var(--leaf)}
+
+  .sect{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:26px 0 10px;display:flex;align-items:center;gap:10px}
+  .sect::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .slots{display:flex;gap:8px;flex-wrap:wrap}
+  .slot{width:58px;height:64px;border:1.5px dashed var(--line);border-radius:10px 10px 16px 16px;background:var(--card);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);transition:border-color .12s,transform .12s;padding:2px}
+  .slot:hover{border-color:var(--leaf);transform:translateY(-2px)}
+  .slot.filled{border-style:solid;border-color:var(--leaf);background:#EAF2E0;color:var(--ink)}
+  .slot.filled .dot{width:14px;height:14px;border-radius:50%;background:var(--leaf)}
+  .slot .plus{font-size:16px;color:var(--line)}
+  .slot .nm{max-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+  .slot.picking{border-color:var(--terra);border-style:solid;box-shadow:0 0 0 3px rgba(192,95,56,.18)}
+
+  .filters{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .fbtn{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 12px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--ink-soft);cursor:pointer}
+  .fbtn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+  .plist{display:flex;flex-direction:column;gap:6px}
+  .prow{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;transition:border-color .12s;text-align:left;width:100%}
+  .prow:hover{border-color:var(--leaf)}
+  .prow .pname{font-weight:700;font-family:'Fraunces',serif;font-size:16px;flex:0 0 auto}
+  .prow .pnote{color:var(--ink-soft);font-size:13px;flex:1;min-width:0}
+  .tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;padding:3px 8px;border-radius:4px;flex:0 0 auto}
+  .tag.best{background:var(--leaf);color:#fff}
+  .tag.good{background:transparent;border:1px solid var(--leaf);color:var(--leaf)}
+  .tag.season{background:var(--sun);color:#3d2c05}
+  .tag.off{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
+
+  .detail{background:var(--card);border:1.5px solid var(--leaf);border-radius:12px;padding:16px 18px;margin-top:10px}
+  .detail h3{font-family:'Fraunces',serif;font-size:20px;margin-bottom:4px}
+  .detail p{font-size:13.5px;color:var(--ink-soft);margin-top:6px}
+  .detail .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .rm{margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;background:transparent;border:1px solid var(--terra);color:var(--terra-deep);border-radius:99px;padding:5px 14px;cursor:pointer}
+  .rm:hover{background:var(--terra);color:#fff}
+
+  .care{margin-top:34px;border-top:2px solid var(--ink);padding-top:18px}
+  .care h2{font-family:'Fraunces',serif;font-size:22px}
+
+  /* ---- search ---- */
+  .searchbar{margin:0 0 24px;position:relative}
+  .searchbar input{width:100%;padding:12px 16px;font-family:'Karla',sans-serif;font-size:15px;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:12px;outline:none}
+  .searchbar input:focus{border-color:var(--leaf)}
+  .searchbar input::placeholder{color:var(--ink-soft)}
+  .sresults{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card);border:1.5px solid var(--leaf);border-radius:12px;box-shadow:0 8px 24px rgba(37,52,31,.14);z-index:20;overflow:hidden}
+  .srow{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);padding:11px 16px;cursor:pointer;font-family:'Karla',sans-serif}
+  .srow:last-child{border-bottom:none}
+  .srow:hover,.srow:focus-visible{background:#EAF2E0}
+  .srow .sn{font-family:'Fraunces',serif;font-weight:600;font-size:16px}
+  .srow .sw{font-size:13px;color:var(--ink-soft);margin-top:2px}
+  .srow .sw b{color:var(--leaf);font-weight:700}
+  .srow .none{color:var(--terra-deep)}
+  .hl-note{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--leaf);margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .hl-note button{background:none;border:none;color:var(--terra-deep);font-family:inherit;font-size:inherit;cursor:pointer;text-decoration:underline;padding:0}
+  .care-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:14px}
+  .care-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .care-card .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--terra-deep);margin-bottom:6px}
+  .care-card p{font-size:13px;color:var(--ink)}
+  .save-note{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);margin-top:14px}
+
+  .picker-close{background:none;border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--terra-deep);cursor:pointer;text-decoration:underline;padding:0}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span>Garden Tower 2</span><span>6 rings · 45 pockets · 5 up top</span><span>rotates 360°</span><span id="dateStamp"></span></div>
+    <h1>The Tower <em>Almanac</em></h1>
+    <p class="sub">The whole tower spins, so sun is equal all around — what changes is <b>height</b>. Spin the tower, tap a ring to see what thrives there, then tap a pocket to plant it.</p>
+  </header>
+
+  <div class="searchbar">
+    <input type="search" id="plantSearch" placeholder="Search a plant — e.g. tomato, mint, broccoli — to see where it goes" autocomplete="off" aria-label="Search plants">
+    <div class="sresults" id="sresults" hidden></div>
+  </div>
+
+  <div class="grid">
+    <div class="tower-card">
+      <div class="tower-stage" id="towerStage" role="img" aria-label="3D Garden Tower diagram — use the row buttons below to select a ring">
+        <div class="gbar gsun"><span>sun</span></div>
+        <div class="gbar gwet"><span>moisture</span></div>
+      </div>
+      <div class="zone-btns" id="zoneBtns" role="group" aria-label="Select a tower row"></div>
+      <p class="drag-hint mono">drag to spin · scroll to zoom · tap a ring or pocket</p>
+    </div>
+
+    <div class="panel">
+      <div id="zonePanel"></div>
+
+      <div class="care">
+        <h2>Tower rhythm</h2>
+        <div class="care-grid">
+          <div class="care-card"><div class="k">Water</div><p id="waterCare">4–6 gal every 2–3 days in summer. Finger-test the <b>bottom row</b> — if it's dry down there, soak; if moist, sip.</p></div>
+          <div class="care-card"><div class="k">Worms</div><p>Feed the center column kitchen scraps as you cook. No citrus, onion, meat, or dairy. Harvest the tea drawer weekly and pour it back through the top.</p></div>
+          <div class="care-card"><div class="k">Rotate</div><p>Give it a quarter-turn every day or two so no plant sulks. Vines trellised off the bottom will limit rotation late-season — that's normal.</p></div>
+          <div class="care-card"><div class="k">SoCal seasons</div><p id="seasonCare"></p></div>
+        </div>
+        <p class="save-note" id="saveNote">Plantings save automatically on this device.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
