@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { buildPlantModel } from './plants3d.js';
 
 const C = {
   bg: 0xEDF1E4, ink: 0x25341F, terra: 0xC05F38, terraDeep: 0x96431F,
@@ -40,160 +41,15 @@ function mat(color) {
   return matCache.get(color);
 }
 
-/* ---------- procedural plants ---------- */
-
-function leafBlade(color, r, len) {
-  const g = new THREE.SphereGeometry(1, 6, 4);
-  const m = new THREE.Mesh(g, mat(color));
-  m.scale.set(r, len, r * 0.45);
-  return m;
-}
+/* ---------- procedural plants (species builders live in plants3d.js) ---------- */
 
 function buildPlant(plant, seed) {
   const rand = rng(seed);
-  const g = new THREE.Group();
-  const fol = new THREE.Color(plant.foliage || '#4E7A3C').getHex();
-  const acc = plant.accent ? new THREE.Color(plant.accent).getHex() : null;
-  const s = plant.small ? 0.72 : plant.tall ? 1.2 : 1;
-
-  const scatter = (n, fn) => { for (let i = 0; i < n; i++) fn(i, rand); };
-
-  switch (plant.form) {
-    case 'leafy': { // rosette of blades fanning outward
-      scatter(7, i => {
-        const a = (i / 7) * Math.PI * 2 + rand() * 0.5;
-        const tilt = 0.55 + rand() * 0.35;
-        const leaf = leafBlade(fol, 0.055 * s, 0.16 * s);
-        leaf.position.set(Math.cos(a) * 0.05, 0.10 * s, Math.sin(a) * 0.05);
-        leaf.rotation.set(Math.sin(a) * tilt, 0, -Math.cos(a) * tilt);
-        g.add(leaf);
-      });
-      break;
-    }
-    case 'herb': { // soft mound of little sphere puffs
-      scatter(8, () => {
-        const a = rand() * Math.PI * 2, r = rand() * 0.09 * s;
-        const puff = new THREE.Mesh(new THREE.SphereGeometry(0.045 + rand() * 0.035, 6, 5), mat(fol));
-        puff.position.set(Math.cos(a) * r, 0.05 + rand() * 0.13 * s, Math.sin(a) * r);
-        g.add(puff);
-      });
-      break;
-    }
-    case 'spiky': { // upright thin blades (onion, chives, celery, rosemary, carrot tops)
-      scatter(9, () => {
-        const a = rand() * Math.PI * 2, r = rand() * 0.05;
-        const h = (0.14 + rand() * 0.12) * s;
-        const blade = new THREE.Mesh(new THREE.ConeGeometry(0.014, h, 5), mat(fol));
-        blade.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r);
-        blade.rotation.set((rand() - 0.5) * 0.5, 0, (rand() - 0.5) * 0.5);
-        g.add(blade);
-      });
-      if (acc) { // e.g. chive blossoms / carrot shoulder
-        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), mat(acc));
-        dot.position.set(0.03, 0.22 * s, 0.02);
-        g.add(dot);
-      }
-      break;
-    }
-    case 'root': { // small leaf fan + colored shoulder peeking from the soil
-      scatter(5, i => {
-        const a = (i / 5) * Math.PI * 2 + rand() * 0.6;
-        const leaf = leafBlade(fol, 0.04, 0.11);
-        leaf.position.set(Math.cos(a) * 0.035, 0.08, Math.sin(a) * 0.035);
-        leaf.rotation.set(Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5);
-        g.add(leaf);
-      });
-      if (acc) {
-        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), mat(acc));
-        bulb.position.y = 0.015;
-        g.add(bulb);
-      }
-      break;
-    }
-    case 'bush': { // broad leaves, generous spread
-      scatter(6, i => {
-        const a = (i / 6) * Math.PI * 2 + rand() * 0.5;
-        const leaf = leafBlade(fol, 0.085, 0.15);
-        leaf.position.set(Math.cos(a) * 0.08, 0.10, Math.sin(a) * 0.08);
-        leaf.rotation.set(Math.sin(a) * 0.7, 0, -Math.cos(a) * 0.7);
-        g.add(leaf);
-      });
-      break;
-    }
-    case 'fruit': { // leafy mound with dangling colored fruit
-      scatter(6, () => {
-        const a = rand() * Math.PI * 2, r = rand() * 0.07;
-        const puff = new THREE.Mesh(new THREE.SphereGeometry(0.05 + rand() * 0.03, 6, 5), mat(fol));
-        puff.position.set(Math.cos(a) * r, (plant.low ? 0.04 : 0.08) + rand() * 0.10, Math.sin(a) * r);
-        g.add(puff);
-      });
-      scatter(3, () => {
-        const a = rand() * Math.PI * 2;
-        const fr = new THREE.Mesh(new THREE.SphereGeometry(plant.low ? 0.022 : 0.032, 8, 6), mat(acc || 0xD2452B));
-        fr.position.set(Math.cos(a) * 0.09, 0.03 + rand() * 0.08, Math.sin(a) * 0.09);
-        g.add(fr);
-      });
-      break;
-    }
-    case 'flower': { // green mound with bright blooms on top
-      scatter(5, () => {
-        const a = rand() * Math.PI * 2, r = rand() * 0.06;
-        const puff = new THREE.Mesh(new THREE.SphereGeometry(0.045 + rand() * 0.025, 6, 5), mat(fol));
-        puff.position.set(Math.cos(a) * r, 0.05 + rand() * 0.08, Math.sin(a) * r);
-        g.add(puff);
-      });
-      scatter(4, () => {
-        const a = rand() * Math.PI * 2, r = 0.03 + rand() * 0.06;
-        const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.026, 6, 5), mat(acc || 0xDFA22F));
-        bloom.position.set(Math.cos(a) * r, 0.12 + rand() * 0.07, Math.sin(a) * r);
-        g.add(bloom);
-      });
-      break;
-    }
-    case 'ball': { // brassica: central head wrapped in leaves
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), mat(acc || fol));
-      head.position.y = 0.07;
-      g.add(head);
-      scatter(6, i => {
-        const a = (i / 6) * Math.PI * 2 + rand() * 0.4;
-        const leaf = leafBlade(fol, 0.05, 0.12);
-        leaf.position.set(Math.cos(a) * 0.06, 0.07, Math.sin(a) * 0.06);
-        leaf.rotation.set(Math.sin(a) * 0.8, 0, -Math.cos(a) * 0.8);
-        g.add(leaf);
-      });
-      break;
-    }
-    case 'vine': { // trailing stem that spills down the tower side
-      const pts = [
-        new THREE.Vector3(0, 0.02, 0),
-        new THREE.Vector3(0.02, 0.10, 0.10),
-        new THREE.Vector3(-0.03, -0.02, 0.24),
-        new THREE.Vector3(0.04, -0.24, 0.34),
-        new THREE.Vector3(-0.02, -0.48, 0.40),
-      ];
-      const curve = new THREE.CatmullRomCurve3(pts);
-      const stem = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.012, 5, false), mat(fol));
-      g.add(stem);
-      scatter(6, i => {
-        const p = curve.getPoint(0.15 + (i / 6) * 0.8);
-        const leaf = leafBlade(fol, 0.05, 0.09);
-        leaf.position.copy(p).add(new THREE.Vector3((rand() - 0.5) * 0.08, 0.02, (rand() - 0.5) * 0.08));
-        leaf.rotation.set(rand() * 1.2, rand() * Math.PI, rand() * 1.2);
-        g.add(leaf);
-      });
-      if (acc) scatter(3, i => {
-        const p = curve.getPoint(0.4 + (i / 3) * 0.5);
-        const fr = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 6), mat(acc));
-        fr.position.copy(p).add(new THREE.Vector3(0, -0.035, 0.02));
-        g.add(fr);
-      });
-      break;
-    }
-  }
-  // slight organic variation
-  g.rotation.y = rand() * Math.PI * 2;
-  const jitter = 0.9 + rand() * 0.25;
-  g.scale.setScalar(jitter);
+  const g = buildPlantModel(plant, rand);
+  // slight organic variation per pocket; directional models (vines, dangling
+  // fruit) only get a little yaw jitter — the caller aims their +Z outward
+  g.rotation.y = g.userData.directional ? (rand() - 0.5) * 0.5 : rand() * Math.PI * 2;
+  g.scale.setScalar(0.9 + rand() * 0.25);
   return g;
 }
 
@@ -383,10 +239,11 @@ export function createTower(container, onPick) {
         if (!plant) return;
         const { pos, out } = pocketFrame(i, s);
         const p = buildPlant(plant, zone + s + pid);
+        if (p.userData.directional) p.rotation.y += Math.atan2(out.x, out.z);
         const up = out.clone().multiplyScalar(Math.sin(0.45)).add(new THREE.Vector3(0, Math.cos(0.45), 0)).normalize();
         p.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), up));
         p.position.copy(pos).add(up.clone().multiplyScalar(0.08));
-        p.scale.multiplyScalar(0.85);
+        p.scale.multiplyScalar(1.5);
         plantsGroup.add(p);
       });
     }
@@ -397,8 +254,10 @@ export function createTower(container, onPick) {
       const plant = plantById(pid);
       if (!plant) return;
       const p = buildPlant(plant, 'crown' + s + pid);
+      // aim directional models outward from the crown's center
+      if (p.userData.directional) p.rotation.y += Math.PI / 2 - (s < 4 ? (s / 4) * Math.PI * 2 + 0.5 : 0);
       p.position.copy(crownSpotPos(s));
-      p.scale.multiplyScalar(1.35);
+      p.scale.multiplyScalar(2.3);
       plantsGroup.add(p);
     });
 

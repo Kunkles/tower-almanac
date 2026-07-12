@@ -2,7 +2,7 @@
 
 A planting guide and pocket tracker for a **Garden Tower 2** vertical garden — the rotating, vermicomposting tower (6 rings × 9 pockets + 5 crown spots = 50 plants, worm column down the middle, nutrient tea drawer at the base).
 
-The tower is rendered in **3D** (Three.js): drag to spin it, scroll to zoom, tap a ring or pocket to select it. Planted pockets grow little procedural plants — vines trail from the bottom rows, herbs mound on top.
+The tower is rendered in **3D** (Three.js): drag to spin it, scroll to zoom, tap a ring or pocket to select it. Planted pockets grow procedural plants — every one of the 30 species has its own recognizable mature form (ruffled lettuce rosettes, feathery carrot tops, tomato vines with fruit trusses, chive blossoms…), built entirely from code with no model files.
 
 ## Why the recommendations look the way they do
 
