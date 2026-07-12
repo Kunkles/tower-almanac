@@ -16,12 +16,12 @@ const C = {
 // tower proportions (matches the physical model: crown + 5 scalloped rings,
 // see img.webp in the repo root)
 const RING_COUNT = 5, POCKETS_PER_RING = 9, CROWN_SLOTS = 5;
-const RING_H = 0.62, R0 = 0.55, DR = 0;             // straight core column — the real tower doesn't taper
+const RING_H = 0.62, R0 = 1.10, DR = 0;             // straight core column — the real tower doesn't taper
 const CROWN_H = 0.30, BASE_H = 0.45;
 const RINGS_TOP = BASE_H + RING_COUNT * RING_H;     // y of ring 1's top edge
 const CROWN_Y = RINGS_TOP + CROWN_H;                // y of crown rim / soil surface
 // the big flared pocket cups that give the tower its scalloped profile
-const CUP_R = 0.17, CUP_TIP = 0.035, CUP_H = 0.42, CUP_TILT = 0.62;
+const CUP_R = 0.34, CUP_TIP = 0.07, CUP_H = 0.84, CUP_TILT = 0.62;
 
 const ringTopR = i => R0 + i * DR;                  // i = 0 (top ring) … 4 (bottom)
 const ringBotR = i => R0 + (i + 1) * DR;
@@ -65,22 +65,22 @@ function pocketFrame(i, slot) {
   const a = (slot / POCKETS_PER_RING) * Math.PI * 2 + offset;
   const out = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
   const up = out.clone().multiplyScalar(Math.sin(CUP_TILT)).add(new THREE.Vector3(0, Math.cos(CUP_TILT), 0)).normalize();
-  const mouth = out.clone().multiplyScalar(ringTopR(i) + 0.09);
+  const mouth = out.clone().multiplyScalar(ringTopR(i) + 0.18);
   mouth.y = ringTopY(i) - 0.15;
   return { mouth, out, up, a };
 }
 
 function crownSpotPos(slot) {
-  if (slot === 4) return new THREE.Vector3(0, CROWN_Y, 0.02); // near center, in front of the worm column
+  if (slot === 4) return new THREE.Vector3(0, CROWN_Y, 0.04); // near center, in front of the worm column
   const a = (slot / 4) * Math.PI * 2 + 0.5;
-  return new THREE.Vector3(Math.cos(a) * 0.33, CROWN_Y, Math.sin(a) * 0.33);
+  return new THREE.Vector3(Math.cos(a) * 0.66, CROWN_Y, Math.sin(a) * 0.66);
 }
 
 export function createTower(container, onPick) {
   const scene = new THREE.Scene();
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 50);
-  camera.position.set(2.6, 3.4, 5.6);
+  camera.position.set(3.4, 3.8, 7.4);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -89,8 +89,8 @@ export function createTower(container, onPick) {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, RINGS_TOP / 2 + 0.5, 0);
   controls.enablePan = false;
-  controls.minDistance = 3.2;
-  controls.maxDistance = 9;
+  controls.minDistance = 3.6;
+  controls.maxDistance = 13;
   controls.minPolarAngle = 0.55;
   controls.maxPolarAngle = 1.52;
   controls.enableDamping = true;
@@ -112,10 +112,10 @@ export function createTower(container, onPick) {
   const ringBands = {};   // zone id -> band mesh
 
   /* ground + soft fake shadow */
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(2.4, 40), new THREE.MeshStandardMaterial({ color: C.ground, roughness: 1 }));
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(3.4, 40), new THREE.MeshStandardMaterial({ color: C.ground, roughness: 1 }));
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
-  const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.35, 40),
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(2.1, 40),
     new THREE.MeshBasicMaterial({ color: 0x25341F, transparent: true, opacity: 0.12 }));
   shadow.rotation.x = -Math.PI / 2;
   shadow.position.y = 0.005;
@@ -128,15 +128,15 @@ export function createTower(container, onPick) {
   scene.add(base);
   for (let i = 0; i < 4; i++) { // stubby feet, like the photo
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 0.12), mat(C.terraDeep));
-    foot.position.set(Math.cos(a) * (botR - 0.05), 0.05, Math.sin(a) * (botR - 0.05));
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.10, 0.22), mat(C.terraDeep));
+    foot.position.set(Math.cos(a) * (botR - 0.1), 0.05, Math.sin(a) * (botR - 0.1));
     scene.add(foot);
   }
-  const drawer = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.12), mat(C.drawer));
-  drawer.position.set(0, 0.22, botR + 0.06);
+  const drawer = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.22, 0.14), mat(C.drawer));
+  drawer.position.set(0, 0.26, botR + 0.07);
   scene.add(drawer);
-  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.03), mat(0xC9B08A));
-  handle.position.set(0, 0.22, botR + 0.125);
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.04, 0.04), mat(0xC9B08A));
+  handle.position.set(0, 0.26, botR + 0.145);
   scene.add(handle);
 
   /* five rings: a core band wearing 9 big flared pocket cups each —
@@ -156,7 +156,7 @@ export function createTower(container, onPick) {
     pickables.push(band);
     ringBands[zone] = band;
 
-    const lip = new THREE.Mesh(new THREE.TorusGeometry(ringTopR(i) + 0.005, 0.016, 6, 40), mat(C.terraDeep));
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(ringTopR(i) + 0.005, 0.028, 6, 48), mat(C.terraDeep));
     lip.rotation.x = Math.PI / 2;
     lip.position.y = ringTopY(i);
     scene.add(lip);
@@ -196,13 +196,13 @@ export function createTower(container, onPick) {
   scene.add(crownSoil);
   pickables.push(crownSoil);
 
-  const column = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.10, 16), mat(C.drawer));
-  column.position.set(-0.28, CROWN_Y + 0.03, -0.28);
+  const column = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.12, 16), mat(C.drawer));
+  column.position.set(-0.56, CROWN_Y + 0.04, -0.56);
   scene.add(column);
 
   const crownSpots = [];
   for (let s = 0; s < CROWN_SLOTS; s++) {
-    const spot = new THREE.Mesh(new THREE.CircleGeometry(0.085, 12), mat(C.soilLite));
+    const spot = new THREE.Mesh(new THREE.CircleGeometry(0.16, 12), mat(C.soilLite));
     spot.rotation.x = -Math.PI / 2;
     spot.position.copy(crownSpotPos(s));
     spot.position.y = CROWN_Y - 0.012;
